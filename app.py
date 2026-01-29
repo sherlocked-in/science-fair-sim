@@ -20,19 +20,19 @@ st.title("Determinants of Clinical Translation in Cancer Nanomedicine")
 st.markdown("""
 ### Translational Analytics Prototype
 
-**Purpose**: Demonstrate nanoparticle physicochemical parameters associated with Phase III advancement.
+**Purpose**: Demonstrate which nanoparticle physicochemical properties are associated with advancing to Phase III trials.
 
-**Dataset Scope**: Illustrative analysis of n=13 landmark nanomedicine trials with verified literature-reported sizes. Real screening yields <20 suitable cases due to sparse reporting.
+**Dataset Scope**: This analysis uses 13 landmark nanomedicine trials where nanoparticle sizes were reported in the literature. Screening more broadly identifies fewer than 20 suitable trials due to limited reporting.
 
-**Statistical Reality**: Detectable effects only > d=1.2; findings are hypothesis-generating.
+**Statistical Reality**: With this dataset size, only very large differences between groups can be reliably detected (standardized mean difference above 1.2); results should be considered hypothesis-generating.
 
-**Key Insight**: Platform maturity dominates over physicochemical optimization.
+**Key Insight**: The maturity of the platform (e.g., liposomal vs. experimental) is a stronger predictor of Phase III advancement than specific physicochemical parameters.
 
-**Citations (Primary Sources):**
-- Doxil: NCT00003094; Marqibo: NCT01458117; Onivyde: NCT02005105; Dox-IL2: NCT01935492; PEG-liposomal: NCT02652871
-- AGuIX: NCT04789486; NBTXR3: NCT02379845; EP0057: NCT02769962; C-dots: NCT02106598; Abraxane: NCT01274746
-- Publications: J Immunother 2015; Nanomedicine 2019; Lancet Oncol 2021; JCR 2018; Sci Transl Med 2014
-- Methodological: Cohen (1988), Mann & Whitney (1947), Fisher (1922), Efron (1979)
+**Primary Sources:**
+- Doxil, Marqibo, Onivyde, Dox-IL2, PEG-liposomal
+- AGuIX, NBTXR3, EP0057, C-dots, Abraxane
+- Peer-reviewed publications: J Immunother 2015; Nanomedicine 2019; Lancet Oncol 2021; JCR 2018; Sci Transl Med 2014
+- Methodology references: Cohen (1988), Mann & Whitney (1947), Fisher (1922), Efron (1979)
 """)
 st.markdown("---")
 
@@ -43,9 +43,9 @@ st.markdown("### Illustrative Clinical Dataset")
 
 data = [
     # Liposomal (FDA approved / widely studied)
-    ["NCT00003094", "Doxil", "liposome", 100, 1, 1, "breast/sarcoma", "Doxil IFU"], # FDA 1995
-    ["NCT01458117", "Marqibo", "liposome", 100, 1, 1, "ALL", "Marqibo IFU"], # FDA 2012
-    ["NCT02005105", "Onivyde", "liposome", 100, 1, 1, "pancreatic", "Onivyde IFU"], # FDA 2015
+    ["NCT00003094", "Doxil", "liposome", 100, 1, 1, "breast/sarcoma", "Doxil IFU"],
+    ["NCT01458117", "Marqibo", "liposome", 100, 1, 1, "ALL", "Marqibo IFU"],
+    ["NCT02005105", "Onivyde", "liposome", 100, 1, 1, "pancreatic", "Onivyde IFU"],
     ["NCT01935492", "Dox-IL2", "liposome", 110, 1, 0, "melanoma", "J Immunother 2015"],
     ["NCT02652871", "PEG-liposomal", "liposome", 90, 1, 0, "lung", "Protocol"],
 
@@ -95,13 +95,13 @@ success_median = core_df[core_df.phase_III==1].size_nm.median()
 failure_median = core_df[core_df.phase_III==0].size_nm.median()
 liposome_pct = (core_df.platform=='liposome').mean()
 
-col1.metric("Phase III Rate", f"{advancement_rate:.0%}", f"{int(advancement_rate*len(core_df))}/{len(core_df)}")
-col2.metric("Success Size", f"{success_median:.0f} nm")
-col3.metric("Failure Size", f"{failure_median:.0f} nm")
-col4.metric("Liposome %", f"{liposome_pct:.0%}")
-col5.metric("Power", "12%", "d>1.2 detectable")
+col1.metric("Phase III Rate", f"{advancement_rate:.0%}", f"{int(advancement_rate*len(core_df))} out of {len(core_df)} trials advanced")
+col2.metric("Median Size of Successful Trials", f"{success_median:.0f} nm")
+col3.metric("Median Size of Non-Advanced Trials", f"{failure_median:.0f} nm")
+col4.metric("Proportion Liposomal Platforms", f"{liposome_pct:.0%}")
+col5.metric("Detectable Effect Size", "Very large differences only", "Standardized mean difference above 1.2")
 
-st.caption("**Power analysis**: n=13 (80% power for d≥1.2; smaller effects undetectable). References: Cohen (1988); Mann & Whitney (1947).")
+st.caption("**Power analysis**: Based on 13 trials, only very large differences are reliably detectable; smaller differences may be missed. References: Cohen (1988); Mann & Whitney (1947).")
 st.markdown("---")
 
 # ==================================================
@@ -113,7 +113,6 @@ success_sizes = core_df.loc[core_df.phase_III==1, "size_nm"]
 failure_sizes = core_df.loc[core_df.phase_III==0, "size_nm"]
 
 def cohens_d(x, y):
-    """Compute standardized mean difference (Cohen's d) for small sample effect size (Cohen, 1988)."""
     nx, ny = len(x), len(y)
     vx, vy = x.var(ddof=1), y.var(ddof=1)
     pooled_sd = np.sqrt(((nx-1)*vx + (ny-1)*vy)/(nx+ny-2))
@@ -121,7 +120,7 @@ def cohens_d(x, y):
 
 effect_size = cohens_d(success_sizes, failure_sizes)
 
-# Bootstrap 95% CI (Efron, 1979)
+# Bootstrap 95% CI
 boot_effects = []
 for _ in range(1000):
     boot_success = np.random.choice(success_sizes, len(success_sizes), replace=True)
@@ -138,22 +137,22 @@ with col1:
         x="phase_III",
         y="size_nm",
         color="platform",
-        labels={"phase_III": "Phase III", "size_nm": "Hydrodynamic Size (nm)"},
-        title="Size Distribution: Phase III Success vs Failure"
+        labels={"phase_III": "Phase III Outcome", "size_nm": "Hydrodynamic Size (nm)"},
+        title="Size Distribution: Phase III Success vs Non-Advancement"
     )
     fig.add_hline(y=success_sizes.median(), line_dash="dash", line_color="#10b981",
-                  annotation_text=f"Success: {success_sizes.median():.0f} nm")
+                  annotation_text=f"Median size of successful trials: {success_sizes.median():.0f} nm")
     fig.add_hline(y=failure_sizes.median(), line_dash="dash", line_color="#ef4444",
-                  annotation_text=f"Not Advanced: {failure_sizes.median():.0f} nm")
+                  annotation_text=f"Median size of non-advanced trials: {failure_sizes.median():.0f} nm")
     st.plotly_chart(fig, use_container_width=True)
 
 with col2:
-    st.metric("Cohen's d", f"{effect_size:.2f}")
-    st.metric("Cohen's d 95% CI", f"[{ci_low:.2f}, {ci_high:.2f}]")
-    st.caption(f"Mann-Whitney U={u_stat:.1f}, p={p_val:.3f} (descriptive; low n). References: Mann & Whitney (1947); Fisher (1922).")
+    st.metric("Cohen's d (Effect Size)", f"{effect_size:.2f}")
+    st.metric("95% Confidence Interval for Effect Size", f"[{ci_low:.2f}, {ci_high:.2f}]")
+    st.caption(f"Mann-Whitney U={u_stat:.1f}, p={p_val:.3f} (descriptive only; small number of trials). References: Mann & Whitney (1947); Fisher (1922).")
 
 st.markdown("""
-**Interpretation**: Wide CI reflects low power. Liposomal platforms cluster 90–110 nm regardless of success, serving as an internal negative control (Jiang et al., 2015; Peer-reviewed IFU data).  
+**Interpretation**: Confidence intervals are wide due to the small number of trials. Liposomal platforms cluster around 90–110 nm regardless of Phase III success, providing a natural reference point.  
 """)
 st.markdown("---")
 
@@ -167,7 +166,7 @@ non_liposomal = core_df[core_df.platform!='liposome']
 
 col1, col2 = st.columns(2)
 with col1:
-    st.markdown("**Liposomal Platforms (n=5)**")
+    st.markdown("**Liposomal Platforms (5 trials)**")
     fig_lipo = px.box(
         liposomal,
         y='size_nm',
@@ -176,10 +175,10 @@ with col1:
     )
     fig_lipo.update_layout(height=350)
     st.plotly_chart(fig_lipo, use_container_width=True)
-    st.caption("Data sources: Doxil IFU, Marqibo IFU, Onivyde IFU, J Immunother 2015, Protocol. NCT IDs: see above.")
+    st.caption("Data sources: Doxil IFU, Marqibo IFU, Onivyde IFU, J Immunother 2015, Protocol. NCT IDs listed above.")
 
 with col2:
-    st.markdown("**Experimental Platforms (n=8)**")
+    st.markdown("**Experimental Platforms (8 trials)**")
     fig_non = px.box(
         non_liposomal,
         y='size_nm',
@@ -188,7 +187,7 @@ with col2:
     )
     fig_non.update_layout(height=350)
     st.plotly_chart(fig_non, use_container_width=True)
-    st.caption("Data sources: Nanomedicine 2019; Lancet Oncol 2021; JCR 2018; Sci Transl Med 2014; NCT IDs: see above.")
+    st.caption("Data sources: Nanomedicine 2019; Lancet Oncol 2021; JCR 2018; Sci Transl Med 2014; NCT IDs listed above.")
 
 st.markdown("---")
 
@@ -199,20 +198,20 @@ col1, col2 = st.columns(2)
 with col1:
     st.markdown("### PEGylation (Descriptive)")
     peg_table = pd.crosstab(core_df.PEGylated, core_df.phase_III, margins=True)
-    peg_table.index = ['Non-PEG', 'PEG', 'Total']
+    peg_table.index = ['Non-PEGylated', 'PEGylated', 'Total']
     st.dataframe(peg_table, use_container_width=True)
     _, fisher_p = fisher_exact(pd.crosstab(core_df.PEGylated, core_df.phase_III))
-    st.markdown(f"**Fisher's exact p**: {fisher_p:.3f} (descriptive; confounded by platform). Reference: Fisher (1922).")
+    st.markdown(f"**Fisher's exact p-value**: {fisher_p:.3f} (descriptive; confounded by platform). Reference: Fisher (1922).")
 
 with col2:
-    st.markdown("### Indication (Contextual)")
+    st.markdown("### Indication (Contextual Summary)")
     indication_summary = core_df.groupby('indication').agg(
         trials=('phase_III','count'),
         success_rate=('phase_III','mean'),
         median_size=('size_nm','median')
     ).round(2)
     st.dataframe(indication_summary, use_container_width=True)
-    st.caption("Note: n too small for subgroup inference. Sources: NCT IDs and IFU / primary literature above.")
+    st.caption("Note: Small number of trials per indication precludes statistical inference. Sources: NCT IDs and IFU / primary literature.")
 
 st.markdown("---")
 
@@ -227,7 +226,7 @@ regulatory = pd.DataFrame({
     'FDA_Approval': ['1995','2012','2015']
 })
 st.dataframe(regulatory)
-st.caption("All cluster in 90–110 nm envelope. Source: FDA labels and ClinicalTrials.gov NCT IDs above.")
+st.caption("All liposomal platforms cluster in the 90–110 nm size range. Source: FDA labels and ClinicalTrials.gov NCT IDs above.")
 st.markdown("---")
 
 # ==================================================
@@ -236,22 +235,22 @@ st.markdown("---")
 with st.expander("Full Methodology & Limitations", expanded=False):
     st.markdown("""
 **Data Reality**
-- ClinicalTrials.gov screening: <20 trials with size reporting (NCT IDs above)
-- Dataset: illustrative synthesis of landmark cases
+- Screening ClinicalTrials.gov: fewer than 20 trials report nanoparticle size
+- Dataset: illustrative synthesis of landmark trials
 - Sources: IFUs, primary literature
 
 **Statistical Reality**
-- Power: only large effects detectable (d>1.2)
-- Bootstrap CI quantifies effect uncertainty (Efron, 1979)
-- Platform maturity dominates physicochemical effects
+- Only very large differences detectable (Cohen’s d above 1.2)
+- Bootstrap confidence intervals quantify uncertainty (Efron, 1979)
+- Platform maturity dominates over specific physicochemical properties
 
 **Observations**
 - Liposomal platforms cluster 90–110 nm regardless of outcome
-- Experimental platforms (<50 nm) rarely advance
-- Platform standardization drives translation
+- Experimental platforms (smaller than 50 nm) rarely advance
+- Platform standardization drives translation more than particle size
 
 **Next Steps**
-- Expand to NLP extraction from 1000+ trials for adequate power (illustrative plan)
+- Expand dataset using NLP to extract size from 1000+ trials for adequate statistical power
 """)
 
 # ==================================================
@@ -261,12 +260,12 @@ st.markdown("""
 ---
 ## Key Translational Insights
 
-**1. Liposomal Envelope**: 90–110 nm (all outcomes)  
-**2. Platform Dominance**: Liposomes (60% success) ≫ Experimental (12%)  
-**3. Size Reality**: Necessary but insufficient without regulatory precedent  
+**1. Liposomal Envelope**: All liposomal nanoparticles are within 90–110 nm.  
+**2. Platform Dominance**: Liposomal platforms succeeded in 3 of 5 trials (~60%), while experimental platforms succeeded in 1 of 8 trials (~12%).  
+**3. Size Reality**: Particle size alone is necessary but insufficient without regulatory precedent.  
 
-**Design Recommendation**: Target liposomal platforms in Doxil-range (100±15 nm)  
+**Design Recommendation**: For new nanomedicines, targeting liposomal platforms in the Doxil size range (approximately 100 nm, plus/minus 15 nm) may increase chances of Phase III translation.  
 
-*Hypothesis-generating analysis; n<20 precludes causal inference.*  
+*Hypothesis-generating analysis; fewer than 20 trials precludes causal inference.*  
 Sources: IFUs, ClinicalTrials.gov NCT IDs, peer-reviewed publications cited above.
 """)
