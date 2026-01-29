@@ -2,227 +2,253 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.express as px
-import plotly.graph_objects as go
 from scipy.stats import spearmanr
 import warnings
-warnings.filterwarnings('ignore')
+warnings.filterwarnings("ignore")
 
-# Professional configuration
+# ============================================================
+# PAGE CONFIGURATION
+# ============================================================
+
 st.set_page_config(
-    page_title="NanoMed Design Advisor", 
+    page_title="Translational Constraints in Nanomedicine",
     page_icon="🔬",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# Clean professional styling
 st.markdown("""
 <style>
     .main {background-color: #f8fafc;}
-    .stMetric > label {color: #475569; font-weight: 500;}
-    .stMetric > div > div {font-size: 1.8rem; font-weight: 600; color: #1e293b;}
-    h1 {color: #1e293b; font-weight: 600;}
-    h2, h3 {color: #334155; font-weight: 500;}
-    .stPlotlyChart {border-radius: 8px;}
+    h1, h2, h3 {color: #1e293b;}
+    .stMetric > div > div {font-weight: 600;}
 </style>
 """, unsafe_allow_html=True)
 
-# ============================================================================
-# CORE APPLICATION
-# ============================================================================
+# ============================================================
+# TITLE & HIGH-LEVEL FRAMING
+# ============================================================
 
-st.title("🔬 NanoMed Design Advisor")
-st.markdown("**Translational analytics platform for nanoparticle formulation design**")
+st.title("🔬 Translational Constraints in Nanomedicine")
+st.markdown("""
+**Computational meta-analysis of late-phase oncology nanomedicine trials**
 
-# ============================================================================
-# DATA ENGINE
-# ============================================================================
+This project examines whether **nanoparticle size distributions cluster non-randomly**
+among formulations that advance to Phase III clinical trials across heterogeneous solid tumors.
+
+**Scope:** Descriptive, hypothesis-generating  
+**Claims:** Observational only — no causal inference
+""")
+
+# ============================================================
+# PROJECT DEFINITION (NEW SECTION)
+# ============================================================
+
+st.markdown("---")
+st.header("Project Definition")
+
+st.subheader("Purpose")
+st.markdown("""
+To investigate whether **clinical translation itself acts as a selection pressure**
+on nanoparticle physicochemical properties, independent of tumor-specific biology.
+""")
+
+st.subheader("Objective")
+st.markdown("""
+To analyze **reported hydrodynamic sizes** of nanoparticles in late-phase (Phase II–III)
+oncology trials and determine whether successful clinical advancement is associated
+with **non-random size clustering**.
+""")
+
+st.subheader("Goal")
+st.markdown("""
+To identify **empirical translational constraints** that may complement
+preclinical design considerations and help explain why many nanomedicines
+fail despite promising early data.
+""")
+
+st.subheader("Methodology")
+st.markdown("""
+1. **Dataset curation**
+   - Trials restricted to oncology nanomedicines with publicly reported nanoparticle size
+   - Phase II–III studies only
+   - Multiple solid tumor indications included
+
+2. **Variable extraction**
+   - Hydrodynamic or nominal nanoparticle diameter (nm)
+   - Phase III advancement (binary)
+   - Platform class (liposomal vs non-liposomal)
+
+3. **Analysis**
+   - Nonparametric statistics (Spearman correlation)
+   - Visual inspection via jittered scatter and median overlays
+   - Platform-stratified descriptive comparison
+
+4. **Interpretation**
+   - Results interpreted as **translational signals**, not efficacy predictors
+""")
+
+# ============================================================
+# DATASET
+# ============================================================
 
 @st.cache_data
-def load_translational_data():
-    """Curated dataset of late-phase nanomedicine trials"""
+def load_data():
+    """
+    Inclusion criteria:
+    - Oncology indication
+    - Phase II or later
+    - Explicitly reported nanoparticle size
+    """
     data = {
-        'NCT_ID': ['NCT00003105', 'NCT00507874', 'NCT00964028', 'NCT01735643', 'NCT02650635',
-                  'NCT00541080', 'NCT00448961', 'NCT00749457', 'NCT01374251', 'NCT02116399'],
-        'hydrodynamic_size_nm': [110, 85, 95, 120, 75, 100, 90, 105, 80, 115],
-        'success_phase_III': [1, 1, 1, 1, 0, 1, 1, 1, 0, 1],
-        'platform': ['liposome', 'liposome', 'liposome', 'liposome', 'polymeric', 
-                    'liposome', 'liposome', 'liposome', 'polymeric', 'liposome'],
-        'indication': ['breast', 'lung', 'breast', 'ovarian', 'melanoma', 'breast', 
-                      'pancreatic', 'lung', 'colorectal', 'breast'],
-        'pegylated': [1, 1, 1, 1, 0, 1, 1, 1, 0, 1],
-        'literature_source': ['Doxil IFU', 'JCR 2008', 'Cancer Res 2010', 'Protocol', 'Nat Nano 2016',
-                            'Doxil IFU', 'Biomaterials 2007', 'Protocol', 'ACS Nano 2012', 'Adv Drug Deliv 2015']
+        "NCT_ID": [
+            "NCT00003105","NCT00507874","NCT00964028","NCT01735643",
+            "NCT02650635","NCT00541080","NCT00448961","NCT00749457",
+            "NCT01374251","NCT02116399"
+        ],
+        "Size_nm": [110, 85, 95, 120, 75, 100, 90, 105, 80, 115],
+        "PhaseIII": [1,1,1,1,0,1,1,1,0,1],
+        "Platform": [
+            "Liposome","Liposome","Liposome","Liposome","Polymeric",
+            "Liposome","Liposome","Liposome","Polymeric","Liposome"
+        ],
+        "Indication": [
+            "Breast","Lung","Breast","Ovarian","Melanoma",
+            "Breast","Pancreatic","Lung","Colorectal","Breast"
+        ]
     }
     return pd.DataFrame(data)
 
-df = load_translational_data()
+df = load_data()
 
-# ============================================================================
-# ANALYTICS DASHBOARD
-# ============================================================================
+# ============================================================
+# SIDEBAR — DATA TRANSPARENCY
+# ============================================================
 
-# KPI Row
-col1, col2, col3, col4 = st.columns(4)
-col1.metric("Late Phase Trials", len(df))
-col2.metric("Phase III Success", f"{df.success_phase_III.mean():.0%}")
-col3.metric("Size Envelope", f"{df.hydrodynamic_size_nm.min():.0f}-{df.hydrodynamic_size_nm.max():.0f} nm")
-col4.metric("Liposome Platform", f"{(df.platform == 'liposome').mean():.0%}")
+with st.sidebar:
+    st.markdown("### Dataset Overview")
+    st.markdown(f"- Total trials: **{len(df)}**")
+    st.markdown(f"- Liposomal platforms: **{(df.Platform=='Liposome').sum()}**")
+    st.markdown("**Key limitation:** small n, public trials only")
+
+# ============================================================
+# SUMMARY METRICS
+# ============================================================
+
+col1, col2, col3 = st.columns(3)
+col1.metric("Phase III Advancement Rate", f"{df.PhaseIII.mean():.0%}")
+col2.metric("Median Size (nm)", f"{df.Size_nm.median():.0f}")
+col3.metric("Observed Size Range", f"{df.Size_nm.min()}–{df.Size_nm.max()} nm")
+
+# ============================================================
+# PRIMARY ANALYSIS
+# ============================================================
 
 st.markdown("---")
+st.header("Primary Analysis: Size vs Clinical Advancement")
 
-# Primary Visualization: Translational Envelope
-st.header("Translational Design Envelope")
-st.markdown("*Observed hydrodynamic size distribution across late-phase oncology trials*")
+st.markdown("""
+Spearman rank correlation is used due to:
+- Small sample size  
+- Non-normal distributions  
+- Binary encoding of clinical advancement  
 
-col1, col2 = st.columns([2, 1])
+Results are interpreted **descriptively only**.
+""")
+
+rho, pval = spearmanr(df.Size_nm, df.PhaseIII)
+
+col1, col2 = st.columns([2,1])
 
 with col1:
-    fig = px.histogram(
-        df, x='hydrodynamic_size_nm', color='success_phase_III',
-        nbins=15, opacity=0.8,
-        title="Late-Phase Nanoparticles Cluster 75-120 nm",
-        labels={'hydrodynamic_size_nm': 'Hydrodynamic Diameter (nm)'}
+    fig = px.strip(
+        df, x="PhaseIII", y="Size_nm",
+        color="Platform", jitter=0.25,
+        title="Nanoparticle Size vs Phase III Advancement",
+        labels={"PhaseIII":"Phase III Advancement","Size_nm":"Size (nm)"}
     )
-    
-    # Manufacturing viability bounds
-    fig.add_vline(x=75, line_dash="dash", line_color="#10b981", 
-                  annotation_text="Manufacturing Viable", annotation_position="top right")
-    fig.add_vline(x=120, line_dash="dash", line_color="#f59e0b", 
-                  annotation_text="RES Clearance Limit", annotation_position="top left")
-    
-    fig.update_layout(height=450, showlegend=True, bargap=0.2)
+    fig.add_hline(y=85, line_dash="dot", annotation_text="Common lower bound (literature)")
+    fig.add_hline(y=115, line_dash="dot", annotation_text="Common upper bound (literature)")
+    fig.update_layout(height=420)
     st.plotly_chart(fig, use_container_width=True)
 
 with col2:
-    success_sizes = df[df.success_phase_III == 1].hydrodynamic_size_nm
-    failure_sizes = df[df.success_phase_III == 0].hydrodynamic_size_nm
-    
-    st.metric("Success Median", f"{success_sizes.median():.0f} nm")
-    st.metric("Failure Median", f"{failure_sizes.median():.0f} nm")
-    effect_size = (success_sizes.mean() - failure_sizes.mean()) / df.hydrodynamic_size_nm.std()
-    st.metric("Effect Size", f"{effect_size:.2f}", delta="Cohen's d")
+    st.metric("Spearman ρ", f"{rho:.2f}")
+    st.metric("p-value", f"{pval:.3f}")
+    st.caption("Non-inferential; small n")
 
-# ============================================================================
-# PLATFORM INTELLIGENCE
-# ============================================================================
+# ============================================================
+# PLATFORM STRATIFICATION
+# ============================================================
 
-st.header("Platform Performance")
-tab1, tab2 = st.tabs(["Liposome Reference", "Platform Comparison"])
+st.markdown("---")
+st.header("Platform-Stratified Observation")
 
-with tab1:
-    liposome_data = df[df.platform == 'liposome']
-    st.markdown("**Liposomes: Regulatory Reference Platform**")
-    st.markdown("• Doxil (100 nm), Onivyde (100 nm) precedents")
-    st.markdown("• Cross-indication deployment history")
-    
-    col1, col2 = st.columns(2)
-    with col1:
-        fig_lipo = px.box(liposome_data, y='hydrodynamic_size_nm', 
-                         color='success_phase_III',
-                         title="Liposome Size Distribution")
-        fig_lipo.update_layout(height=350)
-        st.plotly_chart(fig_lipo, use_container_width=True)
-    
-    with col2:
-        lipo_success_rate = liposome_data.success_phase_III.mean()
-        st.metric("Liposome Success Rate", f"{lipo_success_rate:.0%}")
-        st.caption("Spearman ρ = 0.42, p = 0.23 (n=8)")
+platform_summary = df.groupby("Platform").agg(
+    Trials=("PhaseIII","count"),
+    PhaseIII_Rate=("PhaseIII","mean"),
+    Median_Size_nm=("Size_nm","median")
+).round(2)
 
-with tab2:
-    platform_summary = df.groupby('platform').agg({
-        'success_phase_III': ['count', 'mean'],
-        'hydrodynamic_size_nm': ['median', 'std']
-    }).round(2)
-    st.dataframe(platform_summary, use_container_width=True)
+st.dataframe(platform_summary, use_container_width=True)
 
-# ============================================================================
-# REGULATORY MAPPING
-# ============================================================================
+st.caption("""
+Differences reflect **representation in late-phase trials**, not comparative efficacy.
+""")
 
-st.header("Regulatory Precedent Alignment")
-st.markdown("*FDA-approved nanomedicines validate observed design envelope*")
+# ============================================================
+# REGULATORY CONTEXT
+# ============================================================
 
-regulatory_data = pd.DataFrame({
-    'product': ['Doxil/Caelyx', 'Abraxane', 'Onivyde', 'Vyxeos'],
-    'hydrodynamic_size_nm': [100, 130, 100, 100],
-    'indication': ['multi-oncology', 'breast', 'pancreatic', 'AML'],
-    'approval_year': [1995, 2012, 2015, 2017],
-    'platform': ['liposome', 'albumin-NP', 'liposome', 'liposome']
+st.markdown("---")
+st.header("Regulatory Context")
+
+st.markdown("""
+FDA-approved oncology nanomedicines consistently fall within the same
+approximate size envelope observed in this dataset.
+Reported sizes may not reflect true hydrodynamic diameter.
+""")
+
+regulatory = pd.DataFrame({
+    "Product":["Doxil","Abraxane","Onivyde","Vyxeos"],
+    "Reported_Size_nm":[100,130,100,100],
+    "Platform":["Liposome","Albumin NP","Liposome","Liposome"]
 })
 
-col1, col2 = st.columns([2, 1])
-with col1:
-    fig_reg = px.scatter(regulatory_data, x='hydrodynamic_size_nm', y='approval_year',
-                        size='hydrodynamic_size_nm', color='platform',
-                        hover_name='product',
-                        title="FDA-Approved Nanomedicines (1995-2025)")
-    fig_reg.update_layout(height=400)
-    st.plotly_chart(fig_reg, use_container_width=True)
+fig_reg = px.scatter(
+    regulatory, x="Reported_Size_nm", y="Platform",
+    size="Reported_Size_nm", hover_name="Product",
+    title="Approved Nanomedicines Cluster in Similar Size Range"
+)
+st.plotly_chart(fig_reg, use_container_width=True)
 
-with col2:
-    st.dataframe(regulatory_data[['product', 'hydrodynamic_size_nm', 'indication']], 
-                use_container_width=True)
-    st.caption("All cluster within observed translational envelope")
+# ============================================================
+# LIMITATIONS
+# ============================================================
 
-# ============================================================================
-# DESIGN RECOMMENDATIONS ENGINE
-# ============================================================================
+st.markdown("---")
+st.header("Limitations")
 
-st.header("Formulation Design Recommendations")
-st.markdown("*Synthesis of translational analytics + regulatory precedents*")
+st.markdown("""
+- Small sample size (n=10)
+- Survivorship bias (public trials only)
+- Nominal size reporting; no PDI or charge
+- Tumor-specific effects not controlled
+- No causal inference possible
+""")
 
-col1, col2 = st.columns(2)
-
-with col1:
-    st.subheader("Target Specifications")
-    st.success("**Primary Recommendation**")
-    st.markdown("""
-    - **Hydrodynamic diameter**: 85-110 nm  
-    - **Platform**: Liposome (regulatory maturity)
-    - **PEGylation**: Yes (circulation half-life)
-    - **Manufacturing target**: Doxil-range (100 ± 15 nm)
-    """)
-
-with col2:
-    st.subheader("Risk Factors")
-    st.warning("**High-Risk Design Space**")
-    st.markdown("""
-    ❌ **Avoid**:
-    - <75 nm: Manufacturing instability
-    - >120 nm: RES clearance dominant  
-    - Non-liposomal: Regulatory uncertainty
-    """)
-
-# ============================================================================
-# FUTURE EXPANSION PANEL
-# ============================================================================
-
-with st.expander("🔮 Planned Enhancements", expanded=False):
-    st.markdown("""
-    **Q2 2026: Multi-parameter Expansion**
-    - Surface charge (zeta potential)
-    - Drug loading efficiency  
-    - PDI characterization
-    - Machine learning design optimization
-    
-    **Q3 2026: Real-time ClinicalTrials.gov Integration**
-    - Automated size extraction via NLP
-    - Live Phase II-III pipeline monitoring
-    
-    **Q4 2026: Manufacturing Integration**
-    - Scale-up feasibility scoring
-    - Cost-of-goods modeling
-    """)
-
-# ============================================================================
-# FOOTER
-# ============================================================================
+# ============================================================
+# CONTRIBUTION
+# ============================================================
 
 st.markdown("---")
 st.markdown("""
-<div style='text-align: center; color: #64748b; padding: 2rem;'>
-    <strong>NanoMed Design Advisor</strong> | Translational Analytics Platform<br>
-    Curated from ClinicalTrials.gov + peer-reviewed literature | January 2026
-</div>
-""", unsafe_allow_html=True)
+**Contribution**
+
+This project reframes nanomedicine failure as a **translational filtering problem**,
+highlighting empirical constraints that may not be apparent in preclinical optimization.
+
+The work complements — rather than replaces — biological and mechanistic design strategies.
+""")
+
+st.markdown("*Computational analysis of ClinicalTrials.gov and peer-reviewed literature | 2026*")
