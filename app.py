@@ -135,41 +135,43 @@ st.caption("**Power analysis**: Based on 13 trials, only very large differences 
 st.markdown("---")
 
 # ==================================================
-# PRIMARY ANALYSIS: COHEN'S D + BOOTSTRAP CI
-# ==================================================
+# PRIMARY ANALYSIS: COHEN'S D + BOOTSTRAP CI (FIXED)
 st.markdown("### Primary Analysis: Size Effect with Uncertainty")
 
 advanced_sizes = core_df.loc[core_df.phase_III==1, "size_nm"]
 non_advanced_sizes = core_df.loc[core_df.phase_III==0, "size_nm"]
 
-def cohens_d(x, y):
+def cohens_d_safe(x, y):
     nx, ny = len(x), len(y)
     vx, vy = x.var(ddof=1), y.var(ddof=1)
     pooled_sd = np.sqrt(((nx-1)*vx + (ny-1)*vy)/(nx+ny-2))
-    return np.nan if pooled_sd == 0 else (x.mean() - y.mean()) / pooled_sd
+    return (x.mean() - y.mean()) / pooled_sd if pooled_sd > 0 else None
 
-effect_size = cohens_d(advanced_sizes, non_advanced_sizes)
+effect_size = cohens_d_safe(advanced_sizes, non_advanced_sizes)
 
-# Bootstrap 95% CI
-boot_effects = []
-for _ in range(1000):
-    boot_success = np.random.choice(advanced_sizes, len(advanced_sizes), replace=True)
-    boot_failure = np.random.choice(non_advanced_sizes, len(non_advanced_sizes), replace=True)
-    boot_effects.append(cohens_d(pd.Series(boot_success), pd.Series(boot_failure)))
+# Bootstrap 95% CI only if SD > 0
+if effect_size is not None:
+    boot_effects = []
+    for _ in range(1000):
+        boot_success = np.random.choice(advanced_sizes, len(advanced_sizes), replace=True)
+        boot_failure = np.random.choice(non_advanced_sizes, len(non_advanced_sizes), replace=True)
+        d = cohens_d_safe(pd.Series(boot_success), pd.Series(boot_failure))
+        if d is not None:
+            boot_effects.append(d)
+    if boot_effects:
+        ci_low, ci_high = np.percentile(boot_effects, [2.5, 97.5])
+    else:
+        ci_low, ci_high = None, None
+else:
+    ci_low, ci_high = None, None
 
-ci_low, ci_high = np.percentile(boot_effects, [2.5, 97.5])
 u_stat, p_val = mannwhitneyu(advanced_sizes, non_advanced_sizes, alternative="two-sided")
 
 col1, col2 = st.columns([3,1])
 with col1:
-    fig = px.strip(
-        core_df,
-        x="phase_III",
-        y="size_nm",
-        color="platform",
-        labels={"phase_III": "Phase III Outcome", "size_nm": "Hydrodynamic Size (nm)"},
-        title="Size Distribution: Phase III Entry vs Non-Advancement"
-    )
+    fig = px.strip(core_df, x="phase_III", y="size_nm", color="platform",
+                   labels={"phase_III":"Phase III Outcome","size_nm":"Hydrodynamic Size (nm)"},
+                   title="Size Distribution: Phase III Entry vs Non-Advancement")
     fig.add_hline(y=advanced_sizes.median(), line_dash="dash", line_color="#10b981",
                   annotation_text=f"Median size (Phase III entry): {advanced_sizes.median():.0f} nm")
     fig.add_hline(y=non_advanced_sizes.median(), line_dash="dash", line_color="#ef4444",
@@ -177,8 +179,12 @@ with col1:
     st.plotly_chart(fig, use_container_width=True)
 
 with col2:
-    st.metric("Cohen's d (Effect Size)", f"{effect_size:.2f}")
-    st.metric("95% Confidence Interval for Effect Size", f"[{ci_low:.2f}, {ci_high:.2f}]")
+    st.metric(
+        "Cohen's d (Effect Size)",
+        f"{effect_size:.2f}" if effect_size is not None else "Undefined"
+    )
+    ci_text = f"[{ci_low:.2f}, {ci_high:.2f}]" if ci_low is not None else "Undefined"
+    st.metric("95% Confidence Interval for Effect Size", ci_text)
     st.caption(f"Mann-Whitney U={u_stat:.1f}, p={p_val:.3f} (descriptive only; small number of trials). References: Mann & Whitney (1947); Fisher (1922).")
 
 st.markdown("""
