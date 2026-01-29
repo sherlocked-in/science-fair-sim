@@ -139,8 +139,8 @@ st.markdown("---")
 # ==================================================
 st.markdown("### Primary Analysis: Size Effect with Uncertainty")
 
-success_sizes = core_df.loc[core_df.phase_III==1, "size_nm"]
-failure_sizes = core_df.loc[core_df.phase_III==0, "size_nm"]
+advanced_sizes = core_df.loc[core_df.phase_III==1, "size_nm"]
+non_advanced_sizes = core_df.loc[core_df.phase_III==0, "size_nm"]
 
 def cohens_d(x, y):
     nx, ny = len(x), len(y)
@@ -148,17 +148,17 @@ def cohens_d(x, y):
     pooled_sd = np.sqrt(((nx-1)*vx + (ny-1)*vy)/(nx+ny-2))
     return np.nan if pooled_sd == 0 else (x.mean() - y.mean()) / pooled_sd
 
-effect_size = cohens_d(success_sizes, failure_sizes)
+effect_size = cohens_d(advanced_sizes, non_advanced_sizes)
 
 # Bootstrap 95% CI
 boot_effects = []
 for _ in range(1000):
-    boot_success = np.random.choice(success_sizes, len(success_sizes), replace=True)
-    boot_failure = np.random.choice(failure_sizes, len(failure_sizes), replace=True)
+    boot_success = np.random.choice(advanced_sizes, len(advanced_sizes), replace=True)
+    boot_failure = np.random.choice(non_advanced_sizes, len(non_advanced_sizes), replace=True)
     boot_effects.append(cohens_d(pd.Series(boot_success), pd.Series(boot_failure)))
 
 ci_low, ci_high = np.percentile(boot_effects, [2.5, 97.5])
-u_stat, p_val = mannwhitneyu(success_sizes, failure_sizes, alternative="two-sided")
+u_stat, p_val = mannwhitneyu(advanced_sizes, non_advanced_sizes, alternative="two-sided")
 
 col1, col2 = st.columns([3,1])
 with col1:
@@ -170,10 +170,10 @@ with col1:
         labels={"phase_III": "Phase III Outcome", "size_nm": "Hydrodynamic Size (nm)"},
         title="Size Distribution: Phase III Entry vs Non-Advancement"
     )
-    fig.add_hline(y=success_sizes.median(), line_dash="dash", line_color="#10b981",
-                  annotation_text=f"Median size of successful trials: {success_sizes.median():.0f} nm")
-    fig.add_hline(y=failure_sizes.median(), line_dash="dash", line_color="#ef4444",
-                  annotation_text=f"Median size of non-advanced trials: {failure_sizes.median():.0f} nm")
+    fig.add_hline(y=advanced_sizes.median(), line_dash="dash", line_color="#10b981",
+                  annotation_text=f"Median size of successful trials: {advanced_sizes.median():.0f} nm")
+    fig.add_hline(y=non_advanced_sizes.median(), line_dash="dash", line_color="#ef4444",
+                  annotation_text=f"Median size of non-advanced trials: {non_advanced_sizes.median():.0f} nm")
     st.plotly_chart(fig, use_container_width=True)
 
 with col2:
@@ -201,7 +201,7 @@ with col1:
         liposomal,
         y='size_nm',
         color='phase_III',
-        title=f"Success Rate: {liposomal.phase_III.mean():.0%}"
+        title=f"entry Rate: {liposomal.phase_III.mean():.0%}"
     )
     fig_lipo.update_layout(height=350)
     st.plotly_chart(fig_lipo, use_container_width=True)
@@ -213,7 +213,7 @@ with col2:
         non_liposomal,
         y='size_nm',
         color='phase_III',
-        title=f"Success Rate: {non_liposomal.phase_III.mean():.0%}"
+        title=f"entry Rate: {non_liposomal.phase_III.mean():.0%}"
     )
     fig_non.update_layout(height=350)
     st.plotly_chart(fig_non, use_container_width=True)
@@ -237,7 +237,7 @@ with col2:
     st.markdown("### Indication (Contextual Summary)")
     indication_summary = core_df.groupby('indication').agg(
         trials=('phase_III','count'),
-        success_rate=('phase_III','mean'),
+        entry_rate=('phase_III','mean'),
         median_size=('size_nm','median')
     ).round(2)
     st.dataframe(indication_summary, use_container_width=True)
