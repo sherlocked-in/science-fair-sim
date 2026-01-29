@@ -1,5 +1,7 @@
-gradio
+gradio==4.44.0
 pandas
 numpy
 plotly
 scipy
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
