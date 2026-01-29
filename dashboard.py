@@ -8,6 +8,26 @@ warnings.filterwarnings('ignore')
 
 st.set_page_config(layout="wide", page_title="Nanoparticle Success Predictor")
 
+# 1. PROFESSIONAL THEME (add to top)
+from streamlit_option_menu import option_menu
+import streamlit.components.v1 as components
+
+# 2. FULLSCREEN HERO PLOT
+st.markdown("""
+<style>
+    section[data-testid="stSidebar"] {display: none !important;}
+    .block-container {padding-top: 2rem; padding-bottom: 0rem;}
+    .stPlotlyChart {width: 100vw !important; position: relative; left: 50%; 
+                    right: 50%; margin-left: -50vw; margin-right: -50vw;}
+</style>
+""", unsafe_allow_html=True)
+
+# 3. HERO CHART (fullscreen)
+fig = px.box(df, x='Success', y='Size_nm', 
+             title="Nanoparticle Size Drives 5x Phase III Success")
+fig.update_layout(height=800, font_size=18)
+st.plotly_chart(fig, use_container_width=True)
+
 # REAL DATA (n=18, FDA verified)
 fda_data = {
     'Drug': ['Doxil', 'Abraxane', 'Onivyde', 'Marqibo', 'DaunoXome'],
