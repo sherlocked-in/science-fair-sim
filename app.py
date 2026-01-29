@@ -36,10 +36,35 @@ st.markdown("""
 """)
 st.markdown("---")
 
+st.markdown("""
+### Why this matters
+
+Despite decades of nanomedicine research, fewer than twenty nanoparticle platforms have reached
+Phase III clinical trials globally, and only a small subset have demonstrated translational viability.
+Understanding whether apparent physicochemical trends (e.g., particle size) reflect true biological
+advantages or merely regulatory and manufacturing precedent is critical for rational platform design.
+
+This analysis evaluates whether nanoparticle size is associated with Phase III advancement **after
+accounting for platform maturity**, highlighting the dominant role of manufacturability, regulatory
+familiarity, and clinical precedent in determining translational success. The findings are intended
+to be **hypothesis-generating**, not causal, and emphasize the structural constraints shaping clinical
+nanomedicine pipelines.
+""")
+
 # ==================================================
 # DATASET CONSTRUCTION
 # ==================================================
 st.markdown("### Illustrative Clinical Dataset")
+# ==================================================
+# PHASE III CODING CONVENTION
+# ==================================================
+# phase_III = 1 → entered Phase III clinical trials
+# phase_III = 0 → did not enter Phase III
+#
+# IMPORTANT:
+# This variable encodes *advancement*, not efficacy success.
+# NBTXR3 entered Phase III but failed efficacy endpoints;
+# it is therefore correctly coded as phase_III = 1.
 
 data = [
     # Liposomal (FDA approved / widely studied)
@@ -75,7 +100,12 @@ st.dataframe(
     df[["Drug", "platform", "size_nm", "PEGylated", "phase_III", "analysis_set"]],
     use_container_width=True
 )
-st.caption("*Excluded: albumin-bound formulation (Abraxane); NBTXR3 failed Phase III. Core = included in primary analysis.* Sources: IFUs, primary literature; NCT numbers above.")
+st.caption(
+    "*Phase III indicates entry into Phase III clinical trials, not clinical or regulatory success. "
+    "NBTXR3 entered Phase III but failed efficacy endpoints. "
+    "Abraxane is excluded due to non-nanoparticle mechanism.* "
+    "Sources: IFUs, primary literature; NCT numbers above."
+)
 
 st.markdown("---")
 
@@ -91,13 +121,13 @@ st.markdown("### Key Metrics & Statistical Power")
 
 col1, col2, col3, col4, col5 = st.columns(5)
 advancement_rate = core_df.phase_III.mean()
-success_median = core_df[core_df.phase_III==1].size_nm.median()
-failure_median = core_df[core_df.phase_III==0].size_nm.median()
+advanced_median = core_df[core_df.phase_III==1].size_nm.median()
+non_advanced_median = core_df[core_df.phase_III==0].size_nm.median()
 liposome_pct = (core_df.platform=='liposome').mean()
 
 col1.metric("Phase III Rate", f"{advancement_rate:.0%}", f"{int(advancement_rate*len(core_df))} out of {len(core_df)} trials advanced")
-col2.metric("Median Size of Successful Trials", f"{success_median:.0f} nm")
-col3.metric("Median Size of Non-Advanced Trials", f"{failure_median:.0f} nm")
+col2.metric("Median Size (Phase III)", f"{advanced_median:.0f} nm")
+col3.metric("Median Size (No Phase III)", f"{non_advanced_median:.0f} nm")
 col4.metric("Proportion Liposomal Platforms", f"{liposome_pct:.0%}")
 col5.metric("Detectable Effect Size", "Very large differences only", "Standardized mean difference above 1.2")
 
@@ -138,7 +168,7 @@ with col1:
         y="size_nm",
         color="platform",
         labels={"phase_III": "Phase III Outcome", "size_nm": "Hydrodynamic Size (nm)"},
-        title="Size Distribution: Phase III Success vs Non-Advancement"
+        title="Size Distribution: Phase III Entry vs Non-Advancement"
     )
     fig.add_hline(y=success_sizes.median(), line_dash="dash", line_color="#10b981",
                   annotation_text=f"Median size of successful trials: {success_sizes.median():.0f} nm")
