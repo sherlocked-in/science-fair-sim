@@ -125,24 +125,23 @@ advanced_median = core_df[core_df.phase_III==1].size_nm.median()
 non_advanced_median = core_df[core_df.phase_III==0].size_nm.median()
 liposome_pct = (core_df.platform=='liposome').mean()
 
-col1.metric("Phase III Rate", f"{advancement_rate:.0%}")
-col2.metric("Median Size (Phase III)", f"{advanced_median:.0f} nm")
-col3.metric("Median Size (No Phase III)", f"{non_advanced_median:.0f} nm")
-col4.metric("Proportion Liposomal Platforms", f"{liposome_pct:.0%}")
+# Uniform, slightly smaller font for all metrics
+metric_template = '<div style="font-size:95%; font-weight:bold; text-align:center;">{label}<br><span style="font-size:110%;">{value}</span></div>'
 
-# Use smaller font for the Detectable Effect Size
-col5.markdown(
-    '<div style="font-size:80%; font-weight:bold;">Detectable Effect Size<br>Very large differences only</div>',
-    unsafe_allow_html=True
-)
+col1.markdown(metric_template.format(label="Phase III Rate", value=f"{advancement_rate:.0%}"), unsafe_allow_html=True)
+col2.markdown(metric_template.format(label="Median Size (Phase III)", value=f"{advanced_median:.0f} nm"), unsafe_allow_html=True)
+col3.markdown(metric_template.format(label="Median Size (No Phase III)", value=f"{non_advanced_median:.0f} nm"), unsafe_allow_html=True)
+col4.markdown(metric_template.format(label="Proportion Liposomal Platforms", value=f"{liposome_pct:.0%}"), unsafe_allow_html=True)
+col5.markdown(metric_template.format(label="Detectable Effect Size", value="Very large differences only"), unsafe_allow_html=True)
 
-# Move details that were previously in delta into caption to avoid truncation
+# Move details into caption to avoid truncation
 st.caption(
     f"{int(advancement_rate*len(core_df))} out of {len(core_df)} trials advanced. "
     "Standardized mean difference above 1.2 is needed to reliably detect effects. "
     "**Power analysis**: Based on 13 trials, only very large differences are reliably detectable; smaller differences may be missed. References: Cohen (1988); Mann & Whitney (1947)."
 )
 st.markdown("---")
+
 
 
 
