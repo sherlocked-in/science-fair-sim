@@ -28,7 +28,7 @@ st.markdown("""
 
 **Purpose**  
 To identify physicochemical and platform-level features of cancer nanomedicines
-that are associated with successful advancement to Phase III clinical trials.
+that are associated with advancement to Phase III clinical trials.
 
 **Objective**  
 To evaluate whether nanoparticle size, surface chemistry, and platform type
@@ -103,12 +103,25 @@ st.markdown("### Executive Summary Metrics")
 
 col1, col2, col3, col4 = st.columns(4)
 
-success_rate = core_df.phase_III.mean()
+advancement_rate = core_df.phase_III.mean()
 
-col1.metric("Phase III Success Rate", f"{success_rate:.0%}", f"{int(success_rate*len(core_df))}/{len(core_df)}")
-col2.metric("Median Size (Success)", f"{core_df[core_df.phase_III==1].size_nm.median():.0f} nm")
-col3.metric("Median Size (Failure)", f"{core_df[core_df.phase_III==0].size_nm.median():.0f} nm")
-col4.metric("Liposomal Proportion", f"{(core_df.platform=='liposome').mean():.0%}")
+col1.metric(
+    "Phase III Advancement Rate",
+    f"{advancement_rate:.0%}",
+    f"{int(advancement_rate * len(core_df))}/{len(core_df)}"
+)
+col2.metric(
+    "Median Size (Advanced)",
+    f"{core_df[core_df.phase_III == 1].size_nm.median():.0f} nm"
+)
+col3.metric(
+    "Median Size (Not Advanced)",
+    f"{core_df[core_df.phase_III == 0].size_nm.median():.0f} nm"
+)
+col4.metric(
+    "Liposomal Proportion",
+    f"{(core_df.platform == 'liposome').mean():.0%}"
+)
 
 # ==================================================
 # PRIMARY ANALYSIS: SIZE VS TRANSLATION
@@ -118,7 +131,6 @@ st.markdown("### Primary Analysis: Nanoparticle Size and Phase III Advancement")
 success_sizes = core_df.loc[core_df.phase_III == 1, "size_nm"]
 failure_sizes = core_df.loc[core_df.phase_III == 0, "size_nm"]
 
-# Guard against zero variance
 def cohens_d(x, y):
     nx, ny = len(x), len(y)
     vx, vy = x.var(ddof=1), y.var(ddof=1)
@@ -150,31 +162,38 @@ with col1:
     fig.add_hline(
         y=success_sizes.median(),
         line_dash="dash",
-        annotation_text=f"Success median: {success_sizes.median():.0f} nm"
+        annotation_text=f"Advanced median: {success_sizes.median():.0f} nm"
     )
     fig.add_hline(
         y=failure_sizes.median(),
         line_dash="dash",
-        annotation_text=f"Failure median: {failure_sizes.median():.0f} nm"
+        annotation_text=f"Not advanced median: {failure_sizes.median():.0f} nm"
     )
     st.plotly_chart(fig, use_container_width=True)
 
 with col2:
     st.metric("Cohen’s d", f"{effect_size:.2f}")
     st.metric("Mann–Whitney U", f"{u_stat:.1f}")
-    st.caption(f"p = {p_val:.3f}\n(n={len(success_sizes)} vs {len(failure_sizes)})")
+    st.caption(
+        f"p = {p_val:.3f}\n"
+        f"(n = {len(success_sizes)} vs {len(failure_sizes)})\n"
+        "Effect size estimates are unstable at small n."
+    )
 
 st.markdown("""
 **Interpretation**  
-Observed size differences exhibit a *moderate* standardized effect.
-However, platform stratification reveals that size alone does not explain
-clinical advancement.
+Observed size differences exhibit a *moderate* standardized effect.  
+However, successful and unsuccessful liposomal formulations occupy overlapping
+size ranges, constituting an **internal negative control** that weakens
+size-only explanations. Platform stratification reveals that size alone does
+not explain clinical advancement.
 """)
 
 # ==================================================
 # PLATFORM STRATIFICATION
 # ==================================================
 st.markdown("### Platform-Stratified Outcomes")
+st.markdown("*Stratification explicitly controls for platform regulatory maturity.*")
 
 liposomal = core_df[core_df.platform == "liposome"]
 non_liposomal = core_df[core_df.platform != "liposome"]
@@ -187,8 +206,9 @@ with col1:
         liposomal,
         y="size_nm",
         color="phase_III",
-        title=f"Success Rate: {liposomal.phase_III.mean():.0%}"
+        title=f"Advancement Rate: {liposomal.phase_III.mean():.0%}"
     )
+    fig_lipo.update_layout(height=350)
     st.plotly_chart(fig_lipo, use_container_width=True)
 
 with col2:
@@ -197,8 +217,9 @@ with col2:
         non_liposomal,
         y="size_nm",
         color="phase_III",
-        title=f"Success Rate: {non_liposomal.phase_III.mean():.0%}"
+        title=f"Advancement Rate: {non_liposomal.phase_III.mean():.0%}"
     )
+    fig_non.update_layout(height=350)
     st.plotly_chart(fig_non, use_container_width=True)
 
 # ==================================================
@@ -212,7 +233,10 @@ peg_table.index = ["Non-PEGylated", "PEGylated", "Total"]
 st.dataframe(peg_table, use_container_width=True)
 
 _, fisher_p = fisher_exact(pd.crosstab(core_df.PEGylated, core_df.phase_III))
-st.caption(f"Fisher’s exact test p = {fisher_p:.3f} (interpret with caution due to confounding).")
+st.markdown(
+    f"**Fisher’s exact test**: p = {fisher_p:.3f} "
+    "(descriptive only; confounded with platform choice)."
+)
 
 # ==================================================
 # INDICATION HETEROGENEITY
@@ -224,7 +248,7 @@ indication_summary = (
     .groupby("indication")
     .agg(
         trials=("phase_III", "count"),
-        success_rate=("phase_III", "mean"),
+        advancement_rate=("phase_III", "mean"),
         median_size_nm=("size_nm", "median")
     )
     .round(2)
@@ -233,7 +257,7 @@ indication_summary = (
 st.dataframe(indication_summary, use_container_width=True)
 
 st.caption(
-    "Cancer indication included for contextual completeness; "
+    "Indication included to demonstrate absence of indication-specific clustering; "
     "sample sizes preclude indication-level inference."
 )
 
@@ -251,9 +275,10 @@ with st.expander("Methodology and Limitations"):
 - Effect size: Cohen’s d (pooled standard deviation)
 - Hypothesis testing: Mann–Whitney U (non-parametric)
 - Categorical association: Fisher’s exact test
+- Phase III designation reflects **trial advancement**, not clinical efficacy
 
 **Key Limitations**
-1. Small-n clinical landscape (Phase III scarcity)
+1. Small-n clinical landscape
 2. Survivorship and reporting bias
 3. Strong confounding by regulatory precedent
 4. Nominal size only (PDI and shape not captured)
@@ -277,5 +302,7 @@ st.markdown("""
 **Conclusion**  
 Clinical translation in nanomedicine is governed primarily by *engineering
 robustness and regulatory tractability*, with physicochemical optimization
-acting as a supporting—not determining—factor.
+acting as a supporting—not determining—factor. This mirrors broader
+pharmaceutical development trends, where platform standardization outweighs
+marginal gains from novel targeting strategies.
 """)
