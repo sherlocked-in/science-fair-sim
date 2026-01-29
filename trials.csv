@@ -12,3 +12,4 @@ NCT01702129,Anti-EGFR,95,0,2,0,0,"Phase II","https://clinicaltrials.gov/study/NC
 NCT01935492,Dox-IL,110,1,2,0,0,"Pub extraction","https://clinicaltrials.gov/study/NCT01935492"
 NCT02652871,PEG-lip,90,1,2,0,0,"Terminated","https://clinicaltrials.gov/study/NCT02652871"
 NCT03774680,Cetuximab NP,80,0,2,0,0,"No Phase III","https://clinicaltrials.gov/study/NCT03774680"
+NCT_ID,Reported_Nominal_Size_nm,Indication,PEGylated,Phase_III_Advancement,Platform,Source,Year
