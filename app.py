@@ -129,7 +129,12 @@ col1.metric("Phase III Rate", f"{advancement_rate:.0%}")
 col2.metric("Median Size (Phase III)", f"{advanced_median:.0f} nm")
 col3.metric("Median Size (No Phase III)", f"{non_advanced_median:.0f} nm")
 col4.metric("Proportion Liposomal Platforms", f"{liposome_pct:.0%}")
-col5.metric("Detectable Effect Size", "Very large differences only")
+
+# Use smaller font for the Detectable Effect Size
+col5.markdown(
+    '<div style="font-size:80%; font-weight:bold;">Detectable Effect Size<br>Very large differences only</div>',
+    unsafe_allow_html=True
+)
 
 # Move details that were previously in delta into caption to avoid truncation
 st.caption(
@@ -138,6 +143,7 @@ st.caption(
     "**Power analysis**: Based on 13 trials, only very large differences are reliably detectable; smaller differences may be missed. References: Cohen (1988); Mann & Whitney (1947)."
 )
 st.markdown("---")
+
 
 
 # ==================================================
