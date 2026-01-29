@@ -171,7 +171,7 @@ with col1:
         title="Size Distribution: Phase III Entry vs Non-Advancement"
     )
     fig.add_hline(y=advanced_sizes.median(), line_dash="dash", line_color="#10b981",
-                  annotation_text=f"Median size of successful trials: {advanced_sizes.median():.0f} nm")
+                  annotation_text=f"Median size (Phase III entry): {advanced_sizes.median():.0f} nm")
     fig.add_hline(y=non_advanced_sizes.median(), line_dash="dash", line_color="#ef4444",
                   annotation_text=f"Median size of non-advanced trials: {non_advanced_sizes.median():.0f} nm")
     st.plotly_chart(fig, use_container_width=True)
@@ -201,7 +201,7 @@ with col1:
         liposomal,
         y='size_nm',
         color='phase_III',
-        title=f"entry Rate: {liposomal.phase_III.mean():.0%}"
+        title=f"Phase III Entry Rate: {liposomal.phase_III.mean():.0%}"
     )
     fig_lipo.update_layout(height=350)
     st.plotly_chart(fig_lipo, use_container_width=True)
@@ -213,7 +213,7 @@ with col2:
         non_liposomal,
         y='size_nm',
         color='phase_III',
-        title=f"entry Rate: {non_liposomal.phase_III.mean():.0%}"
+        title=f"Phase III Entry Rate: {non_liposomal.phase_III.mean():.0%}"
     )
     fig_non.update_layout(height=350)
     st.plotly_chart(fig_non, use_container_width=True)
@@ -291,7 +291,7 @@ st.markdown("""
 ## Key Translational Insights
 
 **1. Liposomal Envelope**: All liposomal nanoparticles are within 90–110 nm.  
-**2. Platform Dominance**: Liposomal platforms succeeded in 3 of 5 trials (~60%), while experimental platforms succeeded in 1 of 8 trials (~12%).  
+**2. Platform Dominance**: Liposomal platforms entered Phase III in 3 of 5 trials (~60%), while experimental platforms succeeded in 1 of 8 trials (~12%).  
 **3. Size Reality**: Particle size alone is necessary but insufficient without regulatory precedent.  
 
 **Design Recommendation**: For new nanomedicines, targeting liposomal platforms in the Doxil size range (approximately 100 nm, plus/minus 15 nm) may increase chances of Phase III translation.  
