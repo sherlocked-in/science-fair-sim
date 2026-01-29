@@ -115,7 +115,7 @@ st.markdown("---")
 core_df = df[df.platform != "albumin-bound"].copy()
 
 # ==================================================
-# EXECUTIVE METRICS
+# EXECUTIVE METRICS (FIXED)
 # ==================================================
 st.markdown("### Key Metrics & Statistical Power")
 
@@ -125,14 +125,20 @@ advanced_median = core_df[core_df.phase_III==1].size_nm.median()
 non_advanced_median = core_df[core_df.phase_III==0].size_nm.median()
 liposome_pct = (core_df.platform=='liposome').mean()
 
-col1.metric("Phase III Rate", f"{advancement_rate:.0%}", f"{int(advancement_rate*len(core_df))} out of {len(core_df)} trials advanced")
+col1.metric("Phase III Rate", f"{advancement_rate:.0%}")
 col2.metric("Median Size (Phase III)", f"{advanced_median:.0f} nm")
 col3.metric("Median Size (No Phase III)", f"{non_advanced_median:.0f} nm")
 col4.metric("Proportion Liposomal Platforms", f"{liposome_pct:.0%}")
-col5.metric("Detectable Effect Size", "Very large differences only", "Standardized mean difference above 1.2")
+col5.metric("Detectable Effect Size", "Very large differences only")
 
-st.caption("**Power analysis**: Based on 13 trials, only very large differences are reliably detectable; smaller differences may be missed. References: Cohen (1988); Mann & Whitney (1947).")
+# Move details that were previously in delta into caption to avoid truncation
+st.caption(
+    f"{int(advancement_rate*len(core_df))} out of {len(core_df)} trials advanced. "
+    "Standardized mean difference above 1.2 is needed to reliably detect effects. "
+    "**Power analysis**: Based on 13 trials, only very large differences are reliably detectable; smaller differences may be missed. References: Cohen (1988); Mann & Whitney (1947)."
+)
 st.markdown("---")
+
 
 # ==================================================
 # PRIMARY ANALYSIS: COHEN'S D + BOOTSTRAP CI (FIXED)
