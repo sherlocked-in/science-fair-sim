@@ -75,7 +75,6 @@ with st.sidebar:
 # Load and prepare data (critique fixes applied)
 @st.cache_data
 def load_data():
-    # Enhanced dataset with stratification and better success definition
     data = {
         'NCT_ID': [
             'NCT00003105', 'NCT00507874', 'NCT00964028', 'NCT01735643', 'NCT02650635',
@@ -110,7 +109,7 @@ def load_data():
     df = pd.DataFrame(data)
     
     # Define success more rigorously (fix 3.1)
-    df['Success'] = df['Phase_III_Advancement']  # Labeled as advancement probability
+    df['Success'] = df['Phase_III_Advancement']
     
     # BBB-relevant categorization
     df['BBB_Relevant_Size'] = np.where(df['Particle_Size_nm'] <= 120, 'Optimal (≤120nm)', 'Large (>120nm)')
@@ -129,7 +128,7 @@ with col1:
     </div>
     """, unsafe_allow_html=True)
     st.metric(label="Analyzed Trials", value=len(df))
-    
+
 with col2:
     st.markdown("""
     <div class="metric-card">
@@ -159,7 +158,6 @@ with col4:
 # Main analysis sections
 st.markdown("---")
 
-## Primary Analysis (with all critique fixes)
 st.header("🔬 Primary Analysis")
 st.markdown("**Phase III Advancement by Particle Size** (All Platforms)")
 
@@ -169,9 +167,7 @@ small = df[df['Particle_Size_nm'] <= median_size]
 large = df[df['Particle_Size_nm'] > median_size]
 
 statistic, p_value = mannwhitneyu(small['Particle_Size_nm'], large['Particle_Size_nm'], alternative='two-sided')
-
-# Rank-biserial effect size
-rbs = (small['Success'].sum() - large['Success'].sum()) / len(df)
+rbs = 1 - (2 * statistic / (len(small) * len(large)))
 
 col1, col2 = st.columns([2,1])
 with col1:
@@ -211,7 +207,6 @@ st.markdown("""
 • PEGylation prevalent in successful trials (stealth properties critical)
 • Liposomal platforms show strongest size-success correlation
 • GBM trial aligns with optimal size range
-**Source**: ClinicalTrials.gov, BBB literature[web:1][web:3]
 """)
 
 bbb_fig = px.histogram(df, x='Particle_Size_nm', color='Success',
@@ -221,15 +216,18 @@ bbb_fig.add_vline(x=100, line_dash="dash", line_color="red",
                  annotation_text="BBB Optimal (~100nm)")
 st.plotly_chart(bbb_fig, use_container_width=True)
 
-# PEGylation analysis with Fisher's exact (fix 3.4)
+# PEGylation analysis with Fisher's exact (fix 3.4) - FIXED
 st.subheader("🛡️ PEGylation Effects")
 crosstab = pd.crosstab(df['PEGylated'], df['Success'], margins=True)
-fisher_stat, fisher_p = fisher_exact(pd.crosstab(df['PEGylated'], df['Success']))
 
 col1, col2 = st.columns(2)
 with col1:
-    st.dataframe(crosstab.style.background_gradient(cmap='viridis'), use_container_width=True)
+    # Simple display without styling to avoid matplotlib dependency
+    st.write("**PEGylation vs Phase III Advancement**")
+    st.dataframe(crosstab)
+    
 with col2:
+    fisher_stat, fisher_p = fisher_exact(pd.crosstab(df['PEGylated'], df['Success']))
     st.metric("Fisher's Exact", f"p = {fisher_p:.3f}")
     st.info("**Note**: Descriptive trend (n=25 total)")
 
@@ -242,9 +240,8 @@ if len(cns_df) > 0:
 
 # Raw data transparency
 with st.expander("📋 Raw Trial Data", expanded=False):
-    st.dataframe(df[['NCT_ID', 'Particle_Size_nm', 'PEGylated', 'Platform', 'Indication', 'Success']].style.format({
-        'Particle_Size_nm': '{:.0f}'
-    }), use_container_width=True)
+    st.dataframe(df[['NCT_ID', 'Particle_Size_nm', 'PEGylated', 'Platform', 'Indication', 'Success']], 
+                use_container_width=True)
 
 # Limitations Section (fix 5.2)
 with st.expander("⚠️ Technical Limitations", expanded=False):
