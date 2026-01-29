@@ -1,15 +1,19 @@
 {
-  "version": 2,
   "builds": [
     {
-      "src": "api/dashboard.py",
+      "src": "api/index.py",
       "use": "@vercel/python"
     }
   ],
   "routes": [
     {
       "src": "/(.*)",
-      "dest": "api/dashboard.py"
+      "dest": "api/index.py"
     }
-  ]
+  ],
+  "functions": {
+    "api/index.py": {
+      "maxDuration": 30
+    }
+  }
 }
