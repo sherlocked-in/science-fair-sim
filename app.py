@@ -134,7 +134,7 @@ with tab2:
         'success_phase_III': ['count', 'mean'],
         'hydrodynamic_size_nm': ['median', 'std']
     }).round(2)
-    st.dataframe(platform_summary.style.highlight_max(axis=0), use_container_width=True)
+    st.dataframe(platform_summary, use_container_width=True)
 
 # ============================================================================
 # REGULATORY MAPPING
@@ -183,18 +183,6 @@ with col1:
     - **PEGylation**: Yes (circulation half-life)
     - **Manufacturing target**: Doxil-range (100 ± 15 nm)
     """)
-    
-    # Design space visualization
-    design_fig = px.density_heatmap(
-        x=[75, 85, 95, 105, 115, 125], 
-        y=['liposome', 'polymeric'],
-        z=[[0.8, 0.9, 1.0, 0.9, 0.7, 0.5],
-           [0.6, 0.7, 0.8, 0.6, 0.4, 0.2]],
-        title="Translational Success Probability Heatmap",
-        labels={'x': 'Size (nm)', 'y': 'Platform', 'z': 'Est. Success Rate'}
-    )
-    design_fig.update_layout(height=300)
-    st.plotly_chart(design_fig, use_container_width=True)
 
 with col2:
     st.subheader("Risk Factors")
